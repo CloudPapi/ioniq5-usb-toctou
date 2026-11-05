@@ -71,6 +71,24 @@ hardware are in [`docs/04-field-journal.md`](docs/04-field-journal.md). Deployme
 
 ---
 
+## One race, then a standing door
+
+The swap only has to win **once**. The rootfs it installs carries a tiny systemd service — the
+USB dev-loader — that on every boot runs a root-owned script off any USB stick plugged into the
+head unit. The whole escalation is three hops:
+
+```
+   TOCTOU swap (win once)  ─►  boot the swapped rootfs  ─►  its service runs your files from USB, as root
+```
+
+So one verify-then-install race converts into a **permanent, networkless root channel**: drop a
+script on a stick, plug it in, it runs as root — no second exploit, no reflash. The same payload
+also brings the built-in Wi-Fi up as an AP with an SSH server, so after that one flash the unit
+is reachable without ever touching it again. A single swapped byte-region becomes a key to the
+whole box.
+
+---
+
 ## Repo map
 
 | Path | What |
