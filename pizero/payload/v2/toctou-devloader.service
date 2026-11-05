@@ -1,0 +1,16 @@
+[Unit]
+Description=Owner USB dev-loader: run toctou_dev.sh from a plugged stick (owner research, benign)
+After=multi-user.target usb-automount.service
+Wants=multi-user.target
+
+[Service]
+Type=simple
+# NOTE: no SmackProcessLabel=Privileged — the car's systemd rejects it (status 237); that caused
+# a 173x restart loop in field test #1. Inherit PID1's label.
+# exec /bin/sh and READ the script (dodges SMACK exec-permission block on /etc/owner/*.sh)
+ExecStart=/bin/sh /etc/owner/dev-loader.sh
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

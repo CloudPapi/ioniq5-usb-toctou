@@ -1,0 +1,22 @@
+[Unit]
+Description=Owner access: built-in Wi-Fi AP + dropbear SSH (owner research, benign)
+# Owner's own decommissioned, off-road IONIQ 5. Benign: owner-keyed SSH only.
+After=multi-user.target connman.service
+Wants=multi-user.target
+
+[Service]
+# Type=simple: wifi-up.sh never exits — its watchdog loop IS the service, holding wlan0 as our
+# AP against the OEM connman/supplicantmanager stack that otherwise reclaims it (field test #3).
+Type=simple
+Restart=always
+RestartSec=10
+# NOTE: do NOT set SmackProcessLabel=Privileged — the car's systemd rejects it (status 237,
+# Operation not permitted), which killed this service in field test #1. Inherit PID1's label;
+# stock daemons (connman/wpa_supplicant/dropbear) run fine that way. If a specific op is later
+# SMACK-blocked, chsmack from inside wifi-up.sh instead.
+# exec /bin/sh (valid SMACK exec label) and READ the script, to dodge SMACK's exec-permission
+# block on /etc/owner/*.sh (field test #2: vendor /bin/check-mount.sh hit the same 203/EXEC).
+ExecStart=/bin/sh /etc/owner/wifi-up.sh
+
+[Install]
+WantedBy=multi-user.target

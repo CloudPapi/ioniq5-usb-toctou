@@ -1,0 +1,3 @@
+[
+  { "off": 5505024, "len": 879126179, "evil": "/home/sjl/toctou-usb-update/pizero/build/evil_rootfs.te2", "switch_after_pass": 2, "mode": "benign_then_evil" }
+]

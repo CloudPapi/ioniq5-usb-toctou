@@ -1,0 +1,9 @@
+#!/bin/sh
+# SAMPLE owner dev script. Put a file named exactly 'toctou_dev.sh' at the ROOT of a FAT/exFAT
+# USB stick and plug it into the HU. The dev-loader runs it as root within ~8s of a content change.
+# This is NOT baked into the image — it lives on your USB stick. Edit, re-plug, it runs.
+echo "hello from toctou_dev.sh at $(date -u) as $(id)"
+# examples:
+#   /usr/sbin/dropbear -R -s -p 22            # (re)start ssh
+#   connmanctl tether wifi on IONIQ5-OWNER ChangeMe-OwnerPSK
+#   cp -a /some/log /media/usb/                # pull files back onto the stick

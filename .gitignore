@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# Secrets / key material — never commit. The TE2 content key is supplied at
+# runtime via $TE2_CONTENT_KEY or this gitignored file.
+# ---------------------------------------------------------------------------
+pizero/key.local
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ---------------------------------------------------------------------------
+# Owner's firmware tooling that embeds / handles OEM key material. Not shipped;
+# drop your own copy under pizero/tools/ (or point the scripts at it). See README.
+# ---------------------------------------------------------------------------
+pizero/tools/
+tools/uk_fw/
+
+# ---------------------------------------------------------------------------
+# Large / derived binary artifacts — regenerable from the scripts + the owner's
+# genuine firmware package. Keep them out of Git (multi-GB).
+# ---------------------------------------------------------------------------
+*.img
+*.te2
+*.raw
+*.qcow2
+*.tar.gz
+*.zip
+bzImage
+vmlinux*
+**/build/
+**/binroot/
+**/media/
+**/refe/
+**/refg/
+**/rootfs-tree/
+
+# Logs / runtime state captured from the Pi or the car
+*.log
+!build_evil.log
+toctou*.log
+*.dlt
+
+# Python noise
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor / OS noise
+.DS_Store
+*.swp

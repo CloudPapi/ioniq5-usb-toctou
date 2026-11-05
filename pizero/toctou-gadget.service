@@ -1,0 +1,19 @@
+[Unit]
+Description=IONIQ5 TOCTOU dynamic USB mass-storage gadget (owner-own decommissioned car; benign payload)
+Documentation=file:/home/sjl/toctou-usb-update/pizero/DEPLOY.md
+After=sys-kernel-config.mount local-fs.target network-online.target
+Wants=network-online.target
+ConditionPathExists=/home/sjl/toctou-usb-update/pizero/03_deploy_gadget.sh
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+KillMode=none
+WorkingDirectory=/home/sjl/toctou-usb-update/pizero
+ExecStartPre=/bin/bash -c "for i in $(seq 1 30); do [ -n \"$(ls /sys/class/udc 2>/dev/null)\" ] && exit 0; sleep 1; done; echo \"no UDC - is dtoverlay=dwc2,dr_mode=peripheral under [all]?\"; exit 1"
+ExecStart=/home/sjl/toctou-usb-update/pizero/03_deploy_gadget.sh
+ExecStop=/home/sjl/toctou-usb-update/pizero/99_teardown.sh
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+# Copy to  pizero/key.local  (gitignored) and put the TE2 content key on the first line,
+# OR instead export it:   export TE2_CONTENT_KEY=<32 hex chars>
+#
+# This is the OEM firmware content-encryption (AES) key. It is NOT distributed with this
+# repository. The device owner recovers it from their own firmware package. The scripts
+# that build the swapped envelope (01_make_evil_rootfs.sh, te2_encrypt.py) read it from
+# here or from $TE2_CONTENT_KEY so no secret ever enters version control.
+#
+# 00000000000000000000000000000000
