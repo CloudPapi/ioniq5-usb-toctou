@@ -210,3 +210,25 @@ cp pizero/payload/v2/toctou_dev_diag.sh '/media/<stick>/toctou_dev.sh'   # read-
 Output is written back to the stick (`v2_hello.txt` / `v2_diag.txt`) and `/var/log/`.
 
 Run `99_teardown.sh` on the Pi to unwind the gadget.
+
+---
+
+## 11. Runtime constraints the payload must handle
+
+Established on the running 260128 head unit (via the dev-loader). The boot payload
+(`wifi-up.sh`) must account for all of these; QML/app changes must go through a flash.
+
+| Constraint | Consequence | Handling |
+|---|---|---|
+| `/app` mounted **read-only** | QML (e.g. `OwnerTools.qml`) cannot be patched at runtime | ship QML changes in the image (flash), not via the dev-loader |
+| `/home` and `/etc` **read-only** | can't write `authorized_keys` or host keys in place | place them on tmpfs (`/run`) and `mount --bind` over the target |
+| `iptables` INPUT policy **DROP** (vendor `HARDEN`/`WL_STATIC_IN` chains) | inbound `:22` on `wlan0` is dropped even though dropbear listens | `iptables -I INPUT 1 -i wlan0 -j ACCEPT` (and `--dport 22`) |
+| dropbear built `--disable-syslog` | no logs except stderr; `-E` is **not** supported | run with `-F`; its stderr carries all logging |
+| dropbear `-R` writes host keys to read-only `/etc/dropbear` | drops the connection mid-KEX | pre-generate a host key in a writable path; start with `-r`, or bind-mount a writable `/etc/dropbear` holding the key |
+| `/home/root` is `0775` (group-writable) | dropbear strict-perms rejects key auth | bind-mount a `0700` `/home/root` with `.ssh` `0700` and `authorized_keys` `0600`, owned root |
+| root shell is `/usr/sbin/nologin` (`/etc/passwd`) | login refused / no shell | bind-mount a patched `/etc/passwd` giving root `/bin/sh` |
+
+**Status:** firewall, host-key, home-perms and shell fixes are each confirmed individually via
+the dev-loader; folding them into `wifi-up.sh` so SSH works from a clean boot is in progress.
+SMACK labels on injected `/app` QML match siblings (`access="_"`), so SMACK is not a blocker for
+the menu.

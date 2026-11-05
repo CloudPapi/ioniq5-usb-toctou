@@ -13,7 +13,7 @@ second read installs unsigned content after a signed check has already passed. T
 rootfs has no boot-time integrity (no dm-verity), so the swapped image simply runs at next
 boot.
 
-## Status — confirmed
+## Status
 
 - **PoC (no car): confirmed.** `poc/run_poc.sh` runs the real check-then-install against a USB
   emulator: the signature/md5 check passes on benign bytes, the installer then consumes evil
@@ -21,9 +21,17 @@ boot.
 - **On the real head unit: confirmed.** The Pi dynamic-USB rig serves genuine bytes to the
   verify pass and the swapped image to the install pass; the attacker rootfs installs and boots
   on the owner's own car. No OEM private key is used.
-- **Owner Tools image: working.** The swapped-in payload brings the built-in Wi-Fi up as an AP
-  with a bundled dropbear SSH server at boot, and runs a USB dev-loader for post-install
-  iteration. (On-HU Engineering-Mode menu entry: in progress.)
+- **Owner Tools image — USB dev-loader: confirmed.** After the one flash, the payload's service
+  runs root-owned scripts off a plugged USB stick (the "standing door") — the whole
+  post-install iteration path works with no reflash and no network.
+- **Owner Tools image — Wi-Fi AP: confirmed.** The payload brings the built-in Wi-Fi up as an
+  AP (`IONIQ5-OWNER`, `10.42.0.1`) and a watchdog holds `wlan0` against the OEM stack.
+- **SSH-over-Wi-Fi: in progress (root-cause chain identified).** dropbear listens and completes
+  the handshake; getting an authenticated shell requires handling several device constraints
+  (see below), being finalized live via the dev-loader.
+- **On-HU Engineering-Mode menu entry: fix built, pending flash.** The button renders at row 2
+  slot 5; the dead-tap cause (wrong QML import paths) is fixed in the source and baked into the
+  next image (`/app` is read-only at runtime, so this ships via a flash, not the dev-loader).
 
 > **Scope & authorization.** This is right-to-repair / own-device security research on the
 > author's **own, decommissioned, off-road** IONIQ 5 head unit (build 260128). The payload
