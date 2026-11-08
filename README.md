@@ -108,7 +108,8 @@ whole box.
 | [`docs/04-field-journal.md`](docs/04-field-journal.md) | Chronological bring-up on real hardware: every bug and fix (swap trigger, watchdog reboot, offline logging, DLT timeline analysis). |
 | [`docs/05-mitigations.md`](docs/05-mitigations.md) | The fix patterns (verify-and-use-the-same-bytes, dm-verity). |
 | [`docs/06-owner-menu-v2.md`](docs/06-owner-menu-v2.md) | The Owner Tools image design: on-HU Engineering-Mode menu + built-in-Wi-Fi dropbear SSH, size budget, payload. |
-| [`docs/07-build-and-flash-runbook.md`](docs/07-build-and-flash-runbook.md) | **Owner Tools image: build & flash** — the 1:1 reproduction (dropbear build, `build_v2.sh`, `arm.sh`, flash, verify, iterate). |
+| [`docs/07-build-and-flash-runbook.md`](docs/07-build-and-flash-runbook.md) | **Owner Tools image: build & flash** — the 1:1 reproduction (dropbear build, `build_v2.sh`, `arm.sh`, flash, verify, iterate) + device runtime constraints. |
+| [`docs/08-handoff-ssh-wip.md`](docs/08-handoff-ssh-wip.md) | **Resume state** — SSH-over-Wi-Fi root-cause chain, current HU/Pi/stick state, and the exact next step to pick the work back up. |
 | [`poc/`](poc/) | **No-car** runnable demo: reproduces the two-pass race with real `md5sum`/`openssl`/`dd`/`tar`. |
 | [`pizero/`](pizero/) | The real dynamic-USB gadget: nbdkit swap plugin, build/deploy scripts, systemd unit, host config, and the vendored `gen5w_decrypt.py` / `te2_encrypt.py` crypto tools. |
 

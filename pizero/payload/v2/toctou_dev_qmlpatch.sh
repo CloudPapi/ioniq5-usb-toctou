@@ -1,46 +1,50 @@
 #!/bin/sh
-# v2 dev-loader: live-patch OwnerTools.qml on the running rootfs (no reflash).
-# Installs the OwnerTools.qml that sits next to this script to the app path, matching a sibling
-# QML's SMACK label, then reports. Owner's own decommissioned, off-road car.
+# v2 dev-loader: find how /app is mounted, remount it rw, install OwnerTools.qml, retry.
+# Owner's own decommissioned, off-road car.
 set +e
 STICK_DIR=$(cd "$(dirname "$0")" && pwd)
 SRC="$STICK_DIR/OwnerTools.qml"
 DST=/app/share/AppEngineerMode/qml/owner/OwnerTools.qml
-SIB=/app/share/AppEngineerMode/qml/AppEngineerMode_FullMain.qml
 OUT="$STICK_DIR/v2_qmlpatch.txt"
 {
-  echo "===== v2 OwnerTools.qml live-patch ====="
-  echo "when:   $(date -u 2>/dev/null)"
-  echo "src:    $SRC ($( [ -f "$SRC" ] && wc -c < "$SRC" || echo MISSING ) bytes)"
-  [ -f "$SRC" ] || { echo "ABORT: OwnerTools.qml not found next to the script"; exit 0; }
+  echo "===== v2 OwnerTools.qml live-patch (v2) ====="
+  echo "when: $(date -u 2>/dev/null)"
+  echo "src:  $SRC ($( [ -f "$SRC" ] && wc -c < "$SRC" || echo MISSING ) bytes)"
+  [ -f "$SRC" ] || { echo "ABORT: no OwnerTools.qml next to script"; exit 0; }
 
-  # mount holding /app
-  MP=$(awk '$2=="/app"{print $2} END{}' /proc/mounts); [ -n "$MP" ] || MP=/
-  echo "remount rw: $MP"; mount -o remount,rw "$MP" 2>&1 | sed 's/^/  /'
+  echo "--- mounts of interest ---"
+  grep -E ' / |/app|mmcblk0p|ext4|squash|overlay| ro,| ro ' /proc/mounts | sed 's/^/  /'
 
-  mkdir -p "$(dirname "$DST")" 2>/dev/null
-  [ -f "$DST" ] && cp "$DST" /var/log/OwnerTools.qml.bak 2>/dev/null
+  # longest-prefix mountpoint that contains /app
+  MP=$(awk '{print $2}' /proc/mounts | awk '{print length, $0}' | sort -rn | cut -d" " -f2- | \
+       while read m; do case "/app/share" in "$m"*) echo "$m"; break;; esac; done)
+  [ -n "$MP" ] || MP=/
+  SRCDEV=$(awk -v m="$MP" '$2==m{print $1" "$3" "$4}' /proc/mounts | head -1)
+  echo "--- /app lives on mountpoint: $MP   (dev fstype opts: $SRCDEV) ---"
+  echo "statfs: $(stat -f -c 'fstype=%T bsize=%s' /app 2>/dev/null)"
+
+  echo "--- remount rw $MP ---"
+  mount -o remount,rw "$MP" 2>&1 | sed 's/^/  /'
+  echo "  after: $(awk -v m="$MP" '$2==m{print $4}' /proc/mounts | head -1)"
+
   echo "old DST md5: $(md5sum "$DST" 2>/dev/null | cut -d' ' -f1)"
-  cp "$SRC" "$DST" && echo "copied -> $DST" || echo "COPY FAILED (path read-only?)"
+  cp "$SRC" "$DST" 2>&1 | sed 's/^/  cp: /'
   echo "new DST md5: $(md5sum "$DST" 2>/dev/null | cut -d' ' -f1)"
 
-  echo "--- SMACK labels ---"
-  if command -v chsmack >/dev/null 2>&1; then
-    echo "sibling: $(chsmack "$SIB" 2>/dev/null)"
-    LBL=$(chsmack "$SIB" 2>/dev/null | sed -n 's/.*access="\([^"]*\)".*/\1/p')
-    [ -n "$LBL" ] && chsmack -a "$LBL" "$DST" 2>/dev/null
-    echo "patched: $(chsmack "$DST" 2>/dev/null)"
-  elif command -v getfattr >/dev/null 2>&1; then
-    LBL=$(getfattr -n security.SMACK64 --only-values "$SIB" 2>/dev/null)
-    echo "sibling SMACK64: $LBL"
-    [ -n "$LBL" ] && setfattr -n security.SMACK64 -v "$LBL" "$DST" 2>/dev/null
-    echo "patched SMACK64: $(getfattr -n security.SMACK64 --only-values "$DST" 2>/dev/null)"
-  else
-    echo "no chsmack/getfattr — label unchanged (sibling FullMain loads unlabeled, so likely OK)"
+  # if still read-only, try remounting / as well (in case /app is a bind/sub of root)
+  if [ "$(md5sum "$DST" 2>/dev/null | cut -d' ' -f1)" != "$(md5sum "$SRC" | cut -d' ' -f1)" ]; then
+    echo "--- retry via / remount ---"
+    mount -o remount,rw / 2>&1 | sed 's/^/  /'
+    cp "$SRC" "$DST" 2>&1 | sed 's/^/  cp2: /'
+    echo "new DST md5 (2): $(md5sum "$DST" 2>/dev/null | cut -d' ' -f1)"
   fi
 
+  if command -v chsmack >/dev/null 2>&1; then
+    chsmack -a _ "$DST" 2>/dev/null; echo "label: $(chsmack "$DST" 2>/dev/null)"
+  fi
   sync
-  echo "--- done. Re-open Owner Tools (Loader re-reads the file). If still blank, reboot once. ---"
+  echo "src md5 (target): $(md5sum "$SRC" | cut -d' ' -f1)"
+  echo "--- if DST md5 now == src md5: re-open Owner Tools (reboot if it was already cached). ---"
 } > "$OUT" 2>&1
 sync
 cp "$OUT" /var/log/v2_qmlpatch.txt 2>/dev/null
