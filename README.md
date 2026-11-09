@@ -110,6 +110,7 @@ whole box.
 | [`docs/06-owner-menu-v2.md`](docs/06-owner-menu-v2.md) | The Owner Tools image design: on-HU Engineering-Mode menu + built-in-Wi-Fi dropbear SSH, size budget, payload. |
 | [`docs/07-build-and-flash-runbook.md`](docs/07-build-and-flash-runbook.md) | **Owner Tools image: build & flash** — the 1:1 reproduction (dropbear build, `build_v2.sh`, `arm.sh`, flash, verify, iterate) + device runtime constraints. |
 | [`docs/08-handoff-ssh-wip.md`](docs/08-handoff-ssh-wip.md) | **Resume state** — SSH-over-Wi-Fi root-cause chain, current HU/Pi/stick state, and the exact next step to pick the work back up. |
+| [`docs/09-wireless-carplay.md`](docs/09-wireless-carplay.md) | **Wireless CarPlay: current state** — why it's off, what the firmware already contains (dead transport builders + live Wi-Fi handoff), what would have to be built, the open unknowns, and the read-only probe. |
 | [`poc/`](poc/) | **No-car** runnable demo: reproduces the two-pass race with real `md5sum`/`openssl`/`dd`/`tar`. |
 | [`pizero/`](pizero/) | The real dynamic-USB gadget: nbdkit swap plugin, build/deploy scripts, systemd unit, host config, and the vendored `gen5w_decrypt.py` / `te2_encrypt.py` crypto tools. |
 
