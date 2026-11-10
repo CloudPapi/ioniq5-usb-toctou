@@ -1,4 +1,10 @@
-# Pi Zero TOCTOU toolkit — status
+# Pi Zero TOCTOU toolkit — base-PoC bring-up record (v1, 2026-11-04)
+
+> **Point-in-time record of the base mechanism PoC (v1), not the live status.** The current state is
+> the README Status section + [`docs/06`](../docs/06-owner-menu-v2.md)–[`docs/11`](../docs/11-wireless-carplay-patches.md)
+> (Owner Tools v2 image, on-car swap+boot confirmed, SSH root-caused, wireless-CarPlay patches). This
+> file documents the v1 benign-marker proof model (`wideopen.service`/`proof.sh`, the 4 proof channels,
+> and the first live-Pi bring-up); it was superseded by the v2 Owner Tools image.
 
 Scope: owner's **decommissioned, off-public-road IONIQ 5** (build 260128). Right-to-repair /
 own-device jailbreak research. Benign proof payload only.

@@ -36,8 +36,6 @@ vmlinux*
 
 # Logs / runtime state captured from the Pi or the car
 *.log
-!build_evil.log
-toctou*.log
 *.dlt
 
 # Python noise

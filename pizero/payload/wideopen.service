@@ -1,0 +1,16 @@
+[Unit]
+# v1 base-PoC benign proof-of-root marker (superseded by the v2 Owner Tools image).
+# RECONSTRUCTED to match pizero/STATUS.md + 01_make_evil_rootfs.sh install paths — the original
+# was never committed. Review before publishing. Benign: writes marker files only (see proof.sh).
+Description=TOCTOU benign proof-of-root marker (v1 base PoC)
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# NOTE: SmackProcessLabel=Privileged is REJECTED by the car's systemd (status 237 — see docs/06 §11).
+# Run the script via /bin/sh and let it self-label its output files (chsmack) instead.
+ExecStart=/bin/sh /etc/wideopen/proof.sh
+
+[Install]
+WantedBy=multi-user.target

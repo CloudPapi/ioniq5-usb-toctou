@@ -1,0 +1,38 @@
+{
+  "description": "Wireless CarPlay gate patches for the webOS Gen5W_L head unit (x86-64). Applied to the genuine /app binaries (firmware-derived; the binaries themselves are NOT in this repo). See docs/11-wireless-carplay-patches.md. Firmware-derived binaries stay gitignored; this manifest + apply_carplay_patches.py regenerate them from the owner's genuine files.",
+  "va_equals_file_offset": true,
+  "targets": [
+    {
+      "name": "iAP2Service-2.0",
+      "rel_app_path": "app/bin/iAP2Service-2.0",
+      "size": 633216,
+      "stock_sha256": "38419131df82ec7e3c3b29a68ecc1a078c7f0b403051f137fe9f46f82b99f26e",
+      "patched_sha256": "2cccd6f2f393cf23f0538a491d061abe23e9d0e10371820902bbfa89b5a2458e",
+      "purpose": "Advertise the WirelessCarPlay transport (ComponentId 0x0100) in iAP2 IdentificationInformation. Repurposes the USB-device else-branch of createIdentificationInformationParamList (@0x207fa) -- fires when NOT in USB-host mode, i.e. the wireless case; the wired USB-host branch is untouched.",
+      "anchor_signature_hex": "488d4dd8488b45c8ba000000004889ce4889c7e88f2100008945d48b75d4488b45d8488b7da0488b4da8488b55b04989f94989c84889d1ba0f0000004889c7e81fc1ffff488b45d8",
+      "anchor_note": "Unique 72-byte signature in-file; the two edits are at relative byte 9 and 56 within it. file_offset == VA.",
+      "edits": [
+        {"va": "0x20df0", "file_offset": "0x20df0", "sig_rel": 9,  "stock": "00", "patched": "09", "meaning": "sub_22f8e build selector 0 (USB-device) -> 9 (WirelessCarPlay builder @0x23a86)"},
+        {"va": "0x20e1f", "file_offset": "0x20e1f", "sig_rel": 56, "stock": "0f", "patched": "18", "meaning": "sub_1cf4a append param 0x0f (USB-device transport) -> 0x18 (WirelessCarPlay transport)"}
+      ],
+      "caveats": [
+        "The WirelessCarPlay transport top-level PARAM ID (0x18) is the one value not resolvable statically (dead in firmware; public sources give 0x13 / 0x15 / 0x18). 0x18 is used; it collides with no param this firmware emits (0xa,0xf,0x10,0x12,0x14,0x15,0x16,0x22). If a test iPhone silently sends IdentificationRejected, change the byte at 0x20e1f to 0x13 or 0x15 and retry.",
+        "Advertising the transport is necessary but not sufficient -- see docs/11 for the non-patch items (AppProjection -wpp:1, Wi-Fi credential generator, 5 GHz SoftAP)."
+      ]
+    },
+    {
+      "name": "BluetoothHMI",
+      "rel_app_path": "app/bin/BluetoothHMI",
+      "size": 9173496,
+      "stock_sha256": "37f10926af48265c2c6ee5910ebf1fa43aa08150c7dae8c7b8a3ab736d21bd9f",
+      "patched_sha256": "1ff002ae052d16719de683bfa95636a1ca4f0edb8450bad50841e11c71030a93",
+      "purpose": "Force BluetoothManagerQML::isSupportWPP() true so the BT bootstrap offers wireless CarPlay. Overwrites the entry of sub_4fe72 (the WPP 'is supported' core = (getWPP()!=0xffffffff)) with 'mov eax,1; ret' -- returns before any stack/canary setup.",
+      "anchor_signature_hex": "4883ec1864488b042528000000",
+      "anchor_note": "This prologue (sub rsp,0x18; mov rax,fs:0x28) is NOT unique in-file, so the edit is applied by file_offset 0x4fe72 (== VA), guarded by the whole-file stock_sha256. The apply script verifies the stock bytes at the offset before writing.",
+      "edits": [
+        {"va": "0x4fe72", "file_offset": "0x4fe72", "stock": "4883ec1864488b", "patched": "b801000000c38b", "meaning": "first 6 bytes -> mov eax,1; ret (byte 7 (0x8b) unchanged, now dead code after ret)"}
+      ]
+    }
+  ],
+  "delivery": "Ship the patched binaries in the TOCTOU evil rootfs with SMACK64EXEC=Privileged set (chsmack -e Privileged, preserved in the tar xattrs) -- see docs/10-smack.md. End-to-end function is NOT verifiable without the car + an iPhone."
+}

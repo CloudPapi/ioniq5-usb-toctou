@@ -8,6 +8,15 @@ This firmware ships wired CarPlay. Wireless CarPlay is **confirmed off** (owner-
 per the analysis below, is **not a setting or a persistence-key flip** — it is a binary
 integration + from-scratch authoring job delivered through the TOCTOU image.
 
+> **Partly superseded — read [`docs/11`](11-wireless-carplay-patches.md) alongside this.** Later work
+> (2026-11-10) corrected two conclusions below: **MFi is not the blocker** (the Android HMG sibling
+> enables wireless with zero MFi work; see docs/11 §3), and the AirPlay/CarPlay session layer is
+> transport-agnostic (`libAirPlay`/`libCarPlayAppFramework` already accept Wi-Fi — no reject branch to
+> flip). The two transport/WPP gates below are now **implemented and statically verified** as binary
+> patches in docs/11. Where this doc says "MFi is the kill switch" or "BCM4359 AP-mode unverified",
+> docs/11 (and the Owner Tools Wi-Fi AP, docs/06 §11) are the corrected record. SMACK delivery:
+> [`docs/10`](10-smack.md).
+
 ---
 
 ## TL;DR — the decision-relevant verdict
@@ -25,21 +34,21 @@ level.** Three independent sources agree:
    Bluetooth transport top-level param = `0x11` is confirmed by firmware **and** public RE
    **and** the spec.
 
-**But "documented" ≠ "ready."** It is an **integration + authoring project against a
-non-cooperative black-box oracle (the iPhone behind MFi auth)**:
+**But "documented" ≠ "ready."** It is an **integration + authoring project**:
 
-- two dead jump-table cases to wire (BT `0x0022`, WCP `0x0100`),
-- two subsystems to write from scratch (a Wi-Fi credential generator + a 5 GHz SoftAP),
-- one protocol value that documentation **cannot** settle (the WCP wrap param ID: firmware
-  `0x13` vs public RE `0x18`), resolvable only by live-phone trial,
-- a **hardware precondition we cannot confirm statically**: a reachable, *wireless-entitled*
-  MFi auth coprocessor,
+- two dead jump-table cases to wire (BT `0x0022`, WCP `0x0100`) — **done + verified** as binary
+  patches in [`docs/11`](11-wireless-carplay-patches.md);
+- two subsystems to write from scratch (a Wi-Fi credential generator + a 5 GHz SoftAP) — still open;
+- one protocol value that documentation **cannot** settle (the WCP transport param ID — candidates
+  `0x13` / `0x15` / `0x18`; docs/11 ships `0x18` with `0x13`/`0x15` as retry bytes), resolvable only
+  by live-phone trial;
 - no error channel (wrong framing → silent `IdentificationRejected`), and per-trial SMACK
   boot-loop risk.
 
-**Overall static recoverability: "mostly."** The documentation is not the blocker. The blockers
-are the MFi entitlement (hardware, unverifiable without trying) and the author-it-yourself
-SoftAP + credential path plus a blind param-ID trial.
+**Overall static recoverability: "mostly."** The documentation is not the blocker, and — corrected
+since this doc was first written — **MFi is not the blocker either** (docs/11 §3). The remaining
+real work is the author-it-yourself **SoftAP + Wi-Fi-credential path** plus the `-wpp:1` launch arg
+and the one blind param-ID byte.
 
 ---
 
@@ -171,10 +180,12 @@ Each trial also risks a **SMACK boot-loop** (recovery via bench eMMC/SPI, per
 
 ---
 
-## Cheapest next step: the MFi go/no-go, then the probe
+## Next step: the read-only probe
 
-**MFi is the kill switch.** If the coprocessor is absent or its cert is not wireless-entitled,
-the whole project is dead regardless of code — so check it **first and cheaply**.
+> **Corrected (2026-11-10):** this section originally called MFi "the kill switch." That is wrong —
+> the Android HMG sibling enables wireless CarPlay with **zero** MFi work (docs/11 §3), so MFi is at
+> most a runtime unknown, not the go/no-go. The probe below is still useful for the SoftAP/Wi-Fi and
+> transport-advertisement facts; MFi (§6) is informational, not decisive.
 
 ### The read-only probe — `pizero/payload/v2/toctou_dev_carplay.sh`
 

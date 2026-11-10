@@ -21,9 +21,13 @@ in this repository.
 
 ## What is intentionally not shipped
 - The TE2 content key (supply via `pizero/key.local` / `$TE2_CONTENT_KEY`).
-- OEM firmware decrypt/boot tooling (`gen5w_decrypt.py`, `vm_boot.py`).
 - Any genuine firmware image, the built `usb.img`, or the evil envelope (all gitignored;
-  regenerable by the owner from their own package).
+  regenerable by the owner from their own package); likewise the firmware-derived CarPlay
+  binaries (only the patch recipe in `pizero/patches/carplay/` ships).
+
+The crypto tools `pizero/gen5w_decrypt.py` and `pizero/te2_encrypt.py` **are** vendored (the repo
+relies on them), but they contain **no key material** — they read the content key only from
+`$TE2_CONTENT_KEY` / `pizero/key.local` at runtime.
 
 ## Disclosure
 The underlying fix is a standard verify-and-use-the-same-bytes pattern (see

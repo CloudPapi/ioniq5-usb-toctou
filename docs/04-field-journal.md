@@ -112,12 +112,19 @@ boot**. On the fresh boot (`becbee6a`) systemd is confirmed not arming the wdt
 (`RuntimeWatchdogUSec=0`, no "Using hardware watchdog" in dmesg).
 
 ## 9. Where it stands
-- Mechanism proven (native two-open race); evil envelope built; gadget enumerates and
-  auto-arms; **swap switches on the real head unit**; watchdog reboot fixed on a clean boot.
-- **Open:** a single clean on-car run that stays up through the full multi-minute check +
-  install so the *entire* evil rootfs lands, then confirm the on-device marker. If the Pi
-  still resets with the watchdog confirmed off, the remaining suspect is a **dwc2 gadget
-  hard-lock under the HU's sustained read** (an SoC reset with no `pstore`) — which would
-  need serial/netconsole capture or dwc2 tuning. The local two-pass `/dev/nbd0` load test
-  never reboots (it bypasses USB), so any residual instability is specific to the dwc2
-  gadget path under the HU access pattern.
+- Mechanism proven (native two-open race); evil envelope built; gadget enumerates and auto-arms;
+  **swap switches on the real head unit**; the §8 watchdog reboot (the ~23 s / ~14% abort in §7)
+  is fixed on a clean boot.
+- **On-car swap + full delivery + boot: CONFIRMED** by the Owner Tools v2 field tests (2026-11-05,
+  `docs/06` §9 field test #1 and §12 field test #2): the car accepted the same-version update, the
+  TOCTOU swap fired, and the **entire** swapped v2 rootfs **installed and booted** — proven on-device
+  by the Owner Tools menu button rendering, DLT exports pulled *from the booted image*, the USB
+  dev-loader running root scripts, and the Wi-Fi AP coming up. (A full rootfs must land for the image
+  to boot at all, so these are the on-device markers the earlier "~14% / confirm the marker" wording
+  was waiting on.) The standalone base-PoC benign-marker payload (`TOCTOU_PROOF`/`wideopen.service`)
+  was superseded by that image and was not itself the thing confirmed on-car.
+- **Still open:** nothing blocking on the swap itself. The only residual caution from §7–§8 is Pi/dwc2
+  stability under a *fresh* same-version install on a given day; if a run ever resets with the watchdog
+  confirmed off, the remaining suspect is a dwc2 gadget hard-lock (SoC reset, no `pstore`) needing
+  serial/netconsole capture — but the v2 field tests did deliver and boot. Current HU/image state is
+  tracked in `docs/08` (Environment-state table / build ledger).

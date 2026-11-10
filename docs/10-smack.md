@@ -152,3 +152,6 @@ Neutering SMACK "in general" is possible but is the higher-risk, louder option, 
 code we don't control. For everything we actually run, the clean move is **run `Privileged`** (bake
 `SMACK64EXEC=Privileged`) — see the build #7 plan in [`docs/08`](08-handoff-ssh-wip.md). It is the same
 mechanism that fixes SSH and it generalizes to the dev-loader, `/app` writes, and the CarPlay patches.
+
+See also: [`docs/09`](09-wireless-carplay.md) (wireless CarPlay background) and
+[`docs/11`](11-wireless-carplay-patches.md) (the CarPlay binary patches these labels are applied to).

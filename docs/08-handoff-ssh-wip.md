@@ -1,6 +1,6 @@
 # 08 — Handoff: SSH-over-Wi-Fi WIP + resume state
 
-Snapshot for picking the work back up. As of 2026-11-08. Owner's own decommissioned, off-road
+Snapshot for picking the work back up. As of 2026-11-10. Owner's own decommissioned, off-road
 IONIQ 5 head unit (Gen5W_L, build 260128). Nothing here contains secrets — the TE2 key lives in
 `pizero/key.local` (gitignored) and the Pi password / owner SSH key are supplied out of band.
 
@@ -26,6 +26,19 @@ IONIQ 5 head unit (Gen5W_L, build 260128). Nothing here contains secrets — the
 | build #6 | = build #5 + corrected `OwnerTools.qml` imports (the menu fix). On the Pi, **not yet flashed** to the HU |
 | USB stick (`NEW VOLUME`, mounts on HU at `/media/usb/1/F851-D951/`) | `toctou_dev.sh` = **`v2_dblog.txt` collector** (md5 `5b7f2d3b…`) + `OwnerTools.qml` |
 | Pi access from workstation | password-only; this session used a pty helper (`scratchpad/pssh.py`, not persisted). To resume: recreate it, install an SSH key, or type the password. |
+
+## Build ledger (the `evil_rootfs_menu_v2.te2` filename is reused — track by build #, not md5-in-prose)
+
+All v2 builds share the one filename `build/evil_rootfs_menu_v2.te2`; it is overwritten per build, so
+md5s quoted in older docs (e.g. `docs/06`) are point-in-time. This table is the source of truth.
+
+| Build | md5 | What changed | On car? |
+|---|---|---|---|
+| #1–#3 | (superseded, not retained) | early Owner-Tools iterations (button placement, SmackProcessLabel attempts, ConnMan-tether AP) — chronicled in `docs/06` §4–§10 | field test #1 |
+| #4 | — | field-test-1 image: swap + v2 rootfs **booted**; found no-Wi-Fi + dead dev-loader (`docs/06` §9/§11) | yes (#1) |
+| #5 | `5a367114…` | field-test-2 image: SMACK exec fix, Wi-Fi watchdog; **booted**, dev-loader + AP work (`docs/06` §12). **Currently on the HU.** | yes (#2) |
+| #6 | `c751a218c7a6619f7a9efb21f4b0f0f2` | #5 + corrected `OwnerTools.qml` imports (menu fix). Armed on the Pi, **not yet flashed** | no |
+| #7 | (planned) | #6 + baked SSH (dropbear `SMACK64EXEC=Privileged` + owner key + firewall + `/tmp/passwd` shell). Supersedes #6 | no |
 
 ## SSH-over-Wi-Fi: root-cause chain
 
@@ -96,7 +109,7 @@ initramfs:
    sidestepping every label issue at once. This is the docs-confirmed, lowest-risk SMACK defeat
    (it never flips global enforcement state); rationale and alternatives in
    [`docs/10-smack.md`](10-smack.md). Apply the same label to any other binary we ship (dev-loader,
-   `/app` writers, CarPlay patches).
+   `/app` writers, the [CarPlay patches](11-wireless-carplay-patches.md)).
 2. Put the **owner** ed25519 key in `authorized_keys` (replace the OEM `rsa-key-20181102`).
 3. A tiny `Privileged` systemd unit (or fold into `wifi-up.sh`) at boot: open `:22` on `wlan0`;
    set root's shell to `/bin/sh` and home to a readable dir (edit `/tmp/passwd`, or bake
@@ -146,6 +159,8 @@ Stage any of these on the stick as `toctou_dev.sh`; the dev-loader runs it as ro
 | `toctou_dev_sshall.sh` | (superseded) all-in-one: firewall + host key + 0700 home + dropbear (env fix) |
 | `toctou_dev_shell.sh` | (superseded) the above **+** patch root shell to `/bin/sh`; start logging dropbear |
 | `toctou_dev_dblog.sh` | read `/run/db.log` — dropbear's auth decision (collect after an SSH attempt) |
+| `toctou_dev_carplay.sh` | (read-only) wireless-CarPlay probe → `v2_carplay.txt`: transports, MFi `/dev/i2c-*`, Wi-Fi AP/5GHz, BT, services (see `docs/09`) |
+| `toctou_dev_fix1.sh` | (superseded) field-test-1 Wi-Fi/menu recovery → `v2_report.txt` (see `docs/06` §9) |
 | `toctou_dev_qmlpatch.sh` | (defunct) tried to patch `/app` QML — blocked by read-only `/app` |
 
 Reproduction / build & flash: `docs/07`. Design: `docs/06`.

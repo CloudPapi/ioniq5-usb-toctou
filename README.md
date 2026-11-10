@@ -36,6 +36,13 @@ boot.
 - **On-HU Engineering-Mode menu entry: fix built, pending flash.** The button renders at row 2
   slot 5; the dead-tap cause (wrong QML import paths) is fixed in the source and baked into the
   next image (`/app` is read-only at runtime, so this ships via a flash, not the dev-loader).
+- **Wireless CarPlay / SMACK: researched; two binary patches statically verified.** The iAP2 and
+  BluetoothHMI gate patches (advertise the WirelessCarPlay transport; force WPP-supported) are
+  pinned, applied, re-decompile-verified and reproducible (`pizero/patches/carplay/`) — but **not**
+  integrated into an image or phone-tested, and two from-scratch pieces (a Wi-Fi credential
+  generator + a 5 GHz SoftAP) plus a `-wpp:1` launch arg remain. SMACK is not removable but is
+  neutralized by baking `SMACK64EXEC=Privileged` on our binaries. See
+  [`docs/09`](docs/09-wireless-carplay.md)–[`docs/11`](docs/11-wireless-carplay-patches.md).
 
 > **Scope & authorization.** This is right-to-repair / own-device security research on the
 > author's **own, decommissioned, off-road** IONIQ 5 head unit (build 260128). The payload
@@ -95,9 +102,9 @@ head unit. The whole escalation is three hops:
 
 So one verify-then-install race converts into a **permanent, networkless root channel**: drop a
 script on a stick, plug it in, it runs as root — no second exploit, no reflash. The same payload
-also brings the built-in Wi-Fi up as an AP with an SSH server, so after that one flash the unit
-is reachable without ever touching it again. A single swapped byte-region becomes a key to the
-whole box.
+also brings the built-in Wi-Fi up as an AP and starts a bundled dropbear (authenticated SSH over
+that AP is root-caused and pending one fix — see Status). A single swapped byte-region becomes a
+key to the whole box.
 
 ---
 
@@ -106,6 +113,7 @@ whole box.
 | Path | What |
 |---|---|
 | [`REPRODUCE.md`](REPRODUCE.md) | **Rebuild from zero** — the from-nothing runbook (firmware + key + a Pi → running rig). |
+| [`SECURITY.md`](SECURITY.md) | Scope, authorization, the benign-payload and no-key-forgery statement, and what is intentionally withheld. |
 | [`docs/01-vulnerability.md`](docs/01-vulnerability.md) | The TOCTOU flaw, why the bytes can differ, why it persists, and an honest evidence grading. |
 | [`docs/02-attack-chain.md`](docs/02-attack-chain.md) | End-to-end attack chain + the Pi dynamic-USB gadget architecture and swap logic. |
 | [`docs/03-evidence.md`](docs/03-evidence.md) | What's proven from the binary, the car's own DLT logs, and native/VM execution. |
@@ -116,8 +124,10 @@ whole box.
 | [`docs/08-handoff-ssh-wip.md`](docs/08-handoff-ssh-wip.md) | **Resume state** — SSH-over-Wi-Fi root-cause chain, current HU/Pi/stick state, and the exact next step to pick the work back up. |
 | [`docs/09-wireless-carplay.md`](docs/09-wireless-carplay.md) | **Wireless CarPlay: current state** — why it's off, what the firmware already contains (dead transport builders + live Wi-Fi handoff), what would have to be built, the open unknowns, and the read-only probe. |
 | [`docs/10-smack.md`](docs/10-smack.md) | **SMACK: remove or neuter?** — true removal is infeasible (signed kernel/boot); effective neutering from the rootfs is feasible, with `SMACK64EXEC=Privileged` on our own binaries as the recommended low-risk defeat. The one brick path and recovery. |
+| [`docs/11-wireless-carplay-patches.md`](docs/11-wireless-carplay-patches.md) | **Wireless CarPlay: binary patches** — the two in-place gate patches (iAP2 advertise WCP transport; BluetoothHMI force WPP-supported) with exact offsets/bytes + static verification, and the three necessary non-patch items (`-wpp:1` launch arg, Wi-Fi credential generator, SoftAP). |
 | [`poc/`](poc/) | **No-car** runnable demo: reproduces the two-pass race with real `md5sum`/`openssl`/`dd`/`tar`. |
 | [`pizero/`](pizero/) | The real dynamic-USB gadget: nbdkit swap plugin, build/deploy scripts, systemd unit, host config, and the vendored `gen5w_decrypt.py` / `te2_encrypt.py` crypto tools. |
+| [`pizero/patches/carplay/`](pizero/patches/carplay/) | Reproducible wireless-CarPlay gate patches (manifest + apply script; firmware binaries not shipped). Analysis: `docs/11`. |
 
 ## Quick start — the no-car PoC
 
@@ -149,7 +159,8 @@ In brief:
 6. Insert into the HU, start the update, read the log for `served=EVIL` on the install pass.
 
 Deployment detail (offline logging, re-arm): [`pizero/DEPLOY.md`](pizero/DEPLOY.md).
-Live status: [`pizero/STATUS.md`](pizero/STATUS.md).
+Base-PoC bring-up record (v1, 2026-11-04): [`pizero/STATUS.md`](pizero/STATUS.md). Current state is
+the Status section above + [`docs/06`](docs/06-owner-menu-v2.md)–[`docs/11`](docs/11-wireless-carplay-patches.md).
 
 ## The Owner Tools image (v2)
 
@@ -173,15 +184,18 @@ content key**, supplied at runtime via `pizero/key.local` or `$TE2_CONTENT_KEY` 
 The decrypt tool itself (`pizero/gen5w_decrypt.py`) is vendored and reads the key from there,
 so the repo is self-contained given the firmware and the key.
 
-## Status
+## Evidence grade
+
+(Supports the confirmed on-car result in [Status](#status) above; see also
+[`docs/03`](docs/03-evidence.md)/[`docs/04`](docs/04-field-journal.md).)
 
 - **Vulnerability:** well-evidenced from the real binary + the car's own DLT logs.
 - **Mechanism:** proven winnable — the genuine x86-64 `DecryptToPIPE`/`md5sum` run natively
   against a swapped file verifies A and installs B (done on the bench; see docs/03).
-- **On-car swap:** the dynamic-USB gadget has **switched on the real head unit** (install
-  pass flipped to EVIL). Remaining work is purely operational: keeping the Pi stable for
-  the full multi-minute check+install so the *entire* evil rootfs is delivered, then
-  confirming the on-device marker. See [`docs/04-field-journal.md`](docs/04-field-journal.md).
+- **On-car swap:** switched on the real head unit, and the full v2 rootfs **installed and booted**
+  (Owner Tools field tests #1/#2, confirmed by the on-HU menu + DLT-from-the-booted-image +
+  dev-loader + Wi-Fi AP). Detail and the earlier watchdog/14% abort that this superseded:
+  [`docs/04-field-journal.md`](docs/04-field-journal.md) §7–§9.
 
 ## Disclaimer
 

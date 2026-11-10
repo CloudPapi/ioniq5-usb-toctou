@@ -221,14 +221,17 @@ Established on the running 260128 head unit (via the dev-loader). The boot paylo
 | Constraint | Consequence | Handling |
 |---|---|---|
 | `/app` mounted **read-only** | QML (e.g. `OwnerTools.qml`) cannot be patched at runtime | ship QML changes in the image (flash), not via the dev-loader |
-| `/home` and `/etc` **read-only** | can't write `authorized_keys` or host keys in place | place them on tmpfs (`/run`) and `mount --bind` over the target |
+| `/home` and `/var` are **read-write** (`/home` → `rw_data/home`, p11) | an apparent "can't write `/home`" is a **SMACK write denial**, not a read-only mount — ⚠️ **do NOT** `mount --bind` a tmpfs over `/home/root` (that gives `authorized_keys` a tmpfs SMACK label dropbear can't read → silent auth failure; this was the SSH root cause, see `docs/08`) | write into the real `/home/root` (or a `/run` dir), then floor-label (`_`) the key chain so any subject can read it; better, run dropbear `SMACK64EXEC=Privileged` (see SMACK row) |
+| `/etc/passwd` is a symlink to **`/tmp/passwd`** (tmpfs, writable) | root shell is `/usr/sbin/nologin` there | **edit `/tmp/passwd`** to give root `/bin/sh` (no bind-mount needed); or bake `passwd.legacy` |
+| SMACK **enforcing** with `onlycap=Privileged` | a root process that is **not** SMACK-labeled `Privileged` can't use `CAP_MAC_OVERRIDE`, so it is still bound by SMACK (this is why root "couldn't write `/home`" / dropbear couldn't read the keyfile) | ship our binaries (dropbear, dev-loader) with **`SMACK64EXEC=Privileged`** (`chsmack -e`, preserved in tar xattrs) → they bypass all MAC. See [`docs/10`](10-smack.md) |
 | `iptables` INPUT policy **DROP** (vendor `HARDEN`/`WL_STATIC_IN` chains) | inbound `:22` on `wlan0` is dropped even though dropbear listens | `iptables -I INPUT 1 -i wlan0 -j ACCEPT` (and `--dport 22`) |
-| dropbear built `--disable-syslog` | no logs except stderr; `-E` is **not** supported | run with `-F`; its stderr carries all logging |
-| dropbear `-R` writes host keys to read-only `/etc/dropbear` | drops the connection mid-KEX | pre-generate a host key in a writable path; start with `-r`, or bind-mount a writable `/etc/dropbear` holding the key |
-| `/home/root` is `0775` (group-writable) | dropbear strict-perms rejects key auth | bind-mount a `0700` `/home/root` with `.ssh` `0700` and `authorized_keys` `0600`, owned root |
-| root shell is `/usr/sbin/nologin` (`/etc/passwd`) | login refused / no shell | bind-mount a patched `/etc/passwd` giving root `/bin/sh` |
+| dropbear built `--disable-syslog`, **no `DEBUG_TRACE`** | no logs except stderr; `-E` is **not** supported; and a SMACK `open()` denial of the keyfile is logged **nowhere** (why the SSH failure was silent) | run with `-F`; for a debug build, compile dropbear with `DEBUG_TRACE` to surface the real reason |
+| dropbear `-R` writes host keys to read-only `/etc/dropbear` | drops the connection mid-KEX | pre-generate a host key in a writable path (`/run`, `/var/dropbear`); start with `-r` |
+| `/home/root` is `0775` (group-writable) | dropbear strict-perms rejects key auth | `chmod 700` the real `/home/root` + `.ssh` (`600` `authorized_keys`), owned root — doable once the process is `Privileged` (above); do **not** solve this with a tmpfs bind-mount |
 
-**Status:** firewall, host-key, home-perms and shell fixes are each confirmed individually via
-the dev-loader; folding them into `wifi-up.sh` so SSH works from a clean boot is in progress.
+**Status:** the SSH-over-Wi-Fi failure is **root-caused** (SMACK label on the tmpfs-bind-mounted
+`authorized_keys`, invisible because dropbear lacks `DEBUG_TRACE`); the corrected fix (floor-label
+the key chain / run dropbear `Privileged`) ships as `pizero/payload/v2/toctou_dev_sshfix.sh` and
+bakes into **build #7**. Full chain + the permanent-fix plan: [`docs/08`](08-handoff-ssh-wip.md).
 SMACK labels on injected `/app` QML match siblings (`access="_"`), so SMACK is not a blocker for
 the menu.

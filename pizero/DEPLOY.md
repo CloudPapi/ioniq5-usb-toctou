@@ -3,6 +3,12 @@
 End to end: what YOU do, in order. Everything the scripts call is standard, publicly-documented
 Linux (nbdkit, nbd-client, configfs `f_mass_storage`, dwc2). Benign proof payload only.
 
+> **Scope: the base TOCTOU rig + v1 proof.** The §5 verification/access model below (`dbg0`
+> ethernet, `ssh … 192.168.1.100 -p 2222`) is the **v1** base-PoC path. For the **Owner Tools v2
+> image** — on-HU menu, built-in Wi-Fi **AP** (`IONIQ5-OWNER` / `10.42.0.1`), bundled dropbear on
+> **`:22`**, USB dev-loader — build/flash and access are in [`docs/07`](../docs/07-build-and-flash-runbook.md)
+> and [`docs/08`](../docs/08-handoff-ssh-wip.md); the gadget/swap steps here (§0–§4) apply to both.
+
 ## 0. One-time Pi prep (Pi Zero 2 W, Debian 13 / Raspberry Pi OS)
 ```bash
 sudo apt update && sudo apt install -y nbdkit nbdkit-plugin-python nbd-client exfatprogs

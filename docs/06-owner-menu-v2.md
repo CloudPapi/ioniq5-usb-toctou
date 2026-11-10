@@ -1,12 +1,19 @@
 # v2 — on-HU Owner Tools menu + built-in-Wi-Fi dropbear SSH
 
-Status: **flashed to the car (field test #1, 2026-11-05).** TOCTOU swap worked and the v2 rootfs
+> **This is a chronological design log; §-level status/md5/coordinates below are point-in-time.** For
+> the **current** state use [`docs/08`](08-handoff-ssh-wip.md) (Environment-state table + build ledger)
+> as the single source of truth. Specifically, as of 2026-11-10: the Owner Tools button's final
+> position is **x:1000 y:380 (row 2, slot 5)** — matching `inject_fullmain.py` (slot 4 / x:770 is the
+> OEM Variant button); the HU runs **build #5** (`5a367114…`), **build #6** (`c751a218…`, the menu
+> import fix) is armed on the Pi; md5s quoted per-section here are older builds under the one reused
+> filename `evil_rootfs_menu_v2.te2`.
+
+Status (field test #1, 2026-11-05): **flashed to the car.** TOCTOU swap worked and the v2 rootfs
 booted. **Two issues found on-car:** (1) **no Wi-Fi** (AP `IONIQ5-OWNER` did not appear); (2) the
 **Owner Tools menu button overlapped another icon** and could not be pressed. Root cause was `SmackProcessLabel=Privileged`
-(rejected by the car's systemd, status 237) killing both services — see §11. **Fixed image rebuilt
-and armed** (md5 `acd8ec75…`, no `SmackProcessLabel`, button at x:540 y:380, Wi-Fi gate added);
-awaiting **reflash #2**. The dev-loader itself was dead, so this one reflash is required; after it,
-iteration is via USB/SSH. Scope: owner's **own, decommissioned, off-road** IONIQ 5 head unit (Gen5W_L, build **260128**,
+(rejected by the car's systemd, status 237) killing both services — see §11. Both were fixed in
+later builds (dev-loader-recoverable; see §12 and the docs/08 build ledger); the button moved to its
+final slot 5 (x:1000 y:380). Scope: owner's **own, decommissioned, off-road** IONIQ 5 head unit (Gen5W_L, build **260128**,
 x86-64, kernel 4.1.27-abl, systemd + SMACK). Benign: owner-keyed SSH + log/firewall helpers; no OEM
 private key is used. Delivered via the existing USB-update TOCTOU rig (`arm.sh menu`).
 
