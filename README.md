@@ -26,9 +26,13 @@ boot.
   post-install iteration path works with no reflash and no network.
 - **Owner Tools image — Wi-Fi AP: confirmed.** The payload brings the built-in Wi-Fi up as an
   AP (`IONIQ5-OWNER`, `10.42.0.1`) and a watchdog holds `wlan0` against the OEM stack.
-- **SSH-over-Wi-Fi: in progress (root-cause chain identified).** dropbear listens and completes
-  the handshake; getting an authenticated shell requires handling several device constraints
-  (see below), being finalized live via the dev-loader.
+- **SSH-over-Wi-Fi: root cause found, fix pending verification.** dropbear listens and completes
+  the handshake; the authenticated-shell failure was traced to a **SMACK label** on the
+  `authorized_keys` keyfile (a side effect of an earlier bind-mount workaround) that the
+  non-`Privileged` dropbear process could not read — logged nowhere because the build has no
+  `DEBUG_TRACE`. The fix (floor-label the key chain / run dropbear `Privileged`) ships as
+  `pizero/payload/v2/toctou_dev_sshfix.sh` for live verification, then bakes into the image as
+  **build #7**. Detail: [`docs/08-handoff-ssh-wip.md`](docs/08-handoff-ssh-wip.md).
 - **On-HU Engineering-Mode menu entry: fix built, pending flash.** The button renders at row 2
   slot 5; the dead-tap cause (wrong QML import paths) is fixed in the source and baked into the
   next image (`/app` is read-only at runtime, so this ships via a flash, not the dev-loader).
