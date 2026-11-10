@@ -91,8 +91,12 @@ evil rootfs, bake a self-contained, `Privileged` SSH bring-up that does not depe
 initramfs:
 
 1. Ship `dropbearmulti` at a known path and set **`SMACK64EXEC=Privileged`** on it at build time
-   (`chsmack -e Privileged`, preserved in the tar xattrs) → dropbear runs `Privileged`,
-   sidestepping every SMACK/label issue.
+   (`chsmack -e Privileged`, preserved in the tar xattrs) → dropbear executes with the `Privileged`
+   label, keeps `CAP_MAC_OVERRIDE` even after `onlycap` locks, and **bypasses all SMACK MAC** —
+   sidestepping every label issue at once. This is the docs-confirmed, lowest-risk SMACK defeat
+   (it never flips global enforcement state); rationale and alternatives in
+   [`docs/10-smack.md`](10-smack.md). Apply the same label to any other binary we ship (dev-loader,
+   `/app` writers, CarPlay patches).
 2. Put the **owner** ed25519 key in `authorized_keys` (replace the OEM `rsa-key-20181102`).
 3. A tiny `Privileged` systemd unit (or fold into `wifi-up.sh`) at boot: open `:22` on `wlan0`;
    set root's shell to `/bin/sh` and home to a readable dir (edit `/tmp/passwd`, or bake

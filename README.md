@@ -115,6 +115,7 @@ whole box.
 | [`docs/07-build-and-flash-runbook.md`](docs/07-build-and-flash-runbook.md) | **Owner Tools image: build & flash** — the 1:1 reproduction (dropbear build, `build_v2.sh`, `arm.sh`, flash, verify, iterate) + device runtime constraints. |
 | [`docs/08-handoff-ssh-wip.md`](docs/08-handoff-ssh-wip.md) | **Resume state** — SSH-over-Wi-Fi root-cause chain, current HU/Pi/stick state, and the exact next step to pick the work back up. |
 | [`docs/09-wireless-carplay.md`](docs/09-wireless-carplay.md) | **Wireless CarPlay: current state** — why it's off, what the firmware already contains (dead transport builders + live Wi-Fi handoff), what would have to be built, the open unknowns, and the read-only probe. |
+| [`docs/10-smack.md`](docs/10-smack.md) | **SMACK: remove or neuter?** — true removal is infeasible (signed kernel/boot); effective neutering from the rootfs is feasible, with `SMACK64EXEC=Privileged` on our own binaries as the recommended low-risk defeat. The one brick path and recovery. |
 | [`poc/`](poc/) | **No-car** runnable demo: reproduces the two-pass race with real `md5sum`/`openssl`/`dd`/`tar`. |
 | [`pizero/`](pizero/) | The real dynamic-USB gadget: nbdkit swap plugin, build/deploy scripts, systemd unit, host config, and the vendored `gen5w_decrypt.py` / `te2_encrypt.py` crypto tools. |
 
